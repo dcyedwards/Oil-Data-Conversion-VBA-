@@ -79,7 +79,7 @@ Call modPivot.PivotTableFinal
 
 'STAGE EIGHT
 '-----------
-'Finalizing data for Fetch and we're done here
+'Finalizing data for the Access database and we're done here
 '---------------------------------------------
 Call modPivot.NameRngOSTFetchData
 
