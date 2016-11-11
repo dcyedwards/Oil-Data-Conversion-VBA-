@@ -1,0 +1,1328 @@
+Sub NameCrudeVolumeRange()
+
+'Author : David Edwards
+'Date   : Written on the eighteenth day of the second month of the two-thousandth and sixteenth year of our Lord (10/12/2015)
+'Purpose: To define the variable/dynamic named ranges of the crude stream and volume data. This range is very crucial for
+'         the calculations that take place in the other modules.
+
+Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("OST Volumes")
+Dim i As Long
+Dim lasti As Long
+Dim CrudeVolumeRange As Range, CrudeVolumeDateRange As Range, CrudeStreams As Range
+Dim CrudeVolumeRange2 As Range
+
+i = 1
+'lasti = ws.UsedRange.Row - 1 + ws.UsedRange.Rows.Count
+lasti = ws.Range("A" & ws.Rows.Count).End(xlUp).Row
+
+Check1:
+On Error GoTo ErrCheck1
+ThisWorkbook.Names("rngAPIvolume").Delete
+
+Check2:
+On Error GoTo ErrCheck2
+ThisWorkbook.Names("rngAPIvolumeDate").Delete
+
+Check3:
+On Error GoTo ErrCheck3
+ThisWorkbook.Names("rngCrudeStreams").Delete
+
+Check4:
+On Error GoTo ErrCheck4
+ThisWorkbook.Names("rngAPIvolume2").Delete
+
+label:
+Set CrudeVolumeRange = ws.Range(ws.Cells(i, 3), ws.Cells(lasti, 40))
+Set CrudeVolumeDateRange = ws.Range(ws.Cells(i, 3), ws.Cells(i, 40))
+Set CrudeStreams = ws.Range(ws.Cells(2, 2), ws.Cells(lasti, 3))
+Set CrudeVolumeRange2 = ws.Range(ws.Cells(2, 5), ws.Cells(lasti, 40))
+
+ThisWorkbook.Names.Add Name:="rngAPIvolume", RefersTo:=CrudeVolumeRange
+ThisWorkbook.Names.Add Name:="rngAPIvolumeDate", RefersTo:=CrudeVolumeDateRange
+ThisWorkbook.Names.Add Name:="rngCrudeStreamNames", RefersTo:=CrudeStreams
+ThisWorkbook.Names.Add Name:="rngAPIvolume2", RefersTo:=CrudeVolumeRange2
+
+Exit Sub
+
+ErrCheck1:
+Resume Check2
+
+ErrCheck2:
+Resume Check3
+
+ErrCheck3:
+Resume Check4
+
+ErrCheck4:
+Resume label
+
+End Sub
+----------------------------------------------------------------------------------------------------------------------------------------
+Sub NameCrudeAPIRange()
+
+Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("OST APIs")
+Dim i As Long
+Dim lasti As Long
+Dim CrudeAPIRange As Range, CrudeAPIdateRange As Range
+
+i = 1
+lasti = ws.Range("A" & ws.Rows.Count).End(xlUp).Row
+
+On Error GoTo label
+ThisWorkbook.Names("rngAPIquality").Delete
+ThisWorkbook.Names("rngAPIqualityDate").Delete
+
+label:
+Set CrudeAPIRange = ws.Range(ws.Cells(i, 3), ws.Cells(lasti, 40))
+Set CrudeAPIdateRange = ws.Range(ws.Cells(i, 3), ws.Cells(i, 40))
+
+ThisWorkbook.Names.Add Name:="rngAPIquality", RefersTo:=CrudeAPIRange
+ThisWorkbook.Names.Add Name:="rngAPIqualityDate", RefersTo:=CrudeAPIdateRange
+
+End Sub
+
+Sub CopyCrudeStreamRange()
+
+Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("Conversion Factor Per Stream")
+'Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("test")
+
+ws.Activate
+ws.Range("A3").EntireRow.Insert
+ws.Range("A4").CurrentRegion.ClearContents
+
+Range("rngCrudeStreamNames").Copy
+ws.Range("A3").PasteSpecial xlPasteValues
+Application.CutCopyMode = False
+
+End Sub
+----------------------------------------------------------------------------------------------------------------------------------------
+Sub ApplyStatsConversionFactorPerStream()
+
+Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("Conversion Factor Per Stream")
+Dim i As Long
+Dim lasti As Long, lastcol As Long, cfpsAPI As Range
+
+i = 3
+'lasti = ws.UsedRange.Row - 1 + ws.UsedRange.Rows.Count
+lasti = ws.Range("A" & ws.Rows.Count).End(xlUp).Row
+lastcol = ws.UsedRange.Column - 1 + ws.UsedRange.Columns.Count
+
+ws.Activate
+ThisWorkbook.Names("rngAPIqualityCFPS").Delete
+
+Set cfpsAPI = ws.Range(ws.Cells(i, 2), ws.Cells(lasti, lastcol))
+ThisWorkbook.Names.Add Name:="rngAPIqualityCFPS", RefersTo:=cfpsAPI
+
+With ws
+    .Range("C3").Formula = "=IFERROR(+(IF(VLOOKUP($B3,rngAPIquality,MATCH(C$2,rngAPIqualityDate,0),FALSE)=0" _
+    & ","""",(((VLOOKUP($B3,rngAPIquality,MATCH(C$2,rngAPIqualityDate,0),FALSE))/$F$1)+$G$1))),0)"
+    .Range("C3").AutoFill Destination:=Range(ws.Cells(i, 3), ws.Cells(i, lastcol)), Type:=xlFillDefault
+    .Range(ws.Cells(i, 3), ws.Cells(lasti, lastcol)).FillDown
+End With
+
+ws.Calculate
+
+
+End Sub
+----------------------------------------------------------------------------------------------------------------------------------------
+Sub NameRangesVolumesAndRatios()
+
+Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("Volumes & Ratios")
+Dim i As Long, lasti As Long, cntryVar As Range, crudestrmVar As Range
+
+i = 3
+lasti = ws.Range("A" & ws.Rows.Count).End(xlUp).Row
+
+ws.Activate
+
+On Error GoTo label
+ThisWorkbook.Names("rngCountryVar").Delete
+ThisWorkbook.Names("rngCrudestreamVaR").Delete
+
+label:
+Set cntryVar = ws.Range(ws.Cells(i, 1), ws.Cells(lasti, 1))
+Set crudestrmVar = ws.Range(ws.Cells(i, 2), ws.Cells(lasti, 2))
+
+ThisWorkbook.Names.Add Name:="rngCountryVar", RefersTo:=cntryVar
+ThisWorkbook.Names.Add Name:="rngCrudestreamVaR", RefersTo:=crudestrmVar
+
+End Sub
+----------------------------------------------------------------------------------------------------------------------------------------
+Sub VolumesAndRatiosSTATISTICS1()
+
+'Applying statistics for Volumes & Ratios tab
+
+Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("Volumes & Ratios")
+'Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("test")
+Dim i As Long, lasti As Long, lastcol As Long, ValsVaR As Range
+
+i = 3
+lasti = ws.Range("A" & ws.Rows.Count).End(xlUp).Row
+'lastcol = ws.UsedRange.Column - 1 + ws.UsedRange.Columns.Count
+ws.Activate
+ws.Range("A3").EntireRow.Insert
+ws.Range("A4").CurrentRegion.ClearContents
+ws.Range("D4").CurrentRegion.ClearContents
+ws.Range("AO4").CurrentRegion.ClearContents
+ws.Range("BZ4").CurrentRegion.ClearContents
+ws.Range("DM4").CurrentRegion.ClearContents
+
+Range("rngCrudeStreamNames").Copy
+ws.Range("A3").PasteSpecial xlPasteValues
+ws.Range("BZ3").PasteSpecial xlPasteValues
+ws.Range("DM3").PasteSpecial xlPasteValues
+Application.CutCopyMode = False
+
+Range("rngAPIvolume2").Copy
+ws.Range("D3").PasteSpecial xlPasteValues
+Application.CutCopyMode = False
+
+'Concatenating Country + Crudestream
+With ws
+    .Range("C3").Formula = "=A3&B3"
+    .Range("C3").AutoFill Destination:=Range(ws.Cells(i, 3), ws.Cells(lasti, 3)), Type:=xlFillDefault
+End With
+
+ws.Calculate
+
+i = 2
+'Birthing range "rngCrudestreamValsConc2"...
+On Error GoTo label
+
+ThisWorkbook.Names("rngCrudestreamValsConc2").Delete
+
+Set ValsVaR = ws.Range(ws.Cells(i, 3), ws.Cells(lasti, 39))
+ThisWorkbook.Names.Add Name:="rngCrudestreamValsConc2", RefersTo:=ValsVaR
+
+label:
+Exit Sub
+
+End Sub
+----------------------------------------------------------------------------------------------------------------------------------------
+Sub VolumesAndRatiosSTATISTICS2()
+
+Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("Volumes & Ratios")
+'Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("test")
+Dim i As Long, lasti As Long, lastcol As Long
+
+i = 3
+lasti = ws.Range("A" & ws.Rows.Count).End(xlUp).Row
+
+'Calculating Ratios
+With ws
+    .Activate
+    .Range("AO3").Formula = "=IFERROR(SUMPRODUCT(D$3:D$" & lasti _
+    & "*(rngCountryVaR=$A3)*(rngCrudestreamVaR=$B3)/SUMIF(rngCountryVaR,$A3,D$3:D$" & lasti & ")),0)"
+    .Range("AO3").AutoFill Destination:=Range(ws.Cells(i, 41), ws.Cells(i, 76)), Type:=xlFillDefault
+    .Range(ws.Cells(i, 41), ws.Cells(lasti, 76)).FillDown
+End With
+
+ws.Calculate
+'Working out the known conversion factors
+Exit Sub
+
+End Sub
+----------------------------------------------------------------------------------------------------------------------------------------
+Sub VolumesAndRatiosSTATISTICS3()
+
+Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("Volumes & Ratios")
+Dim i As Long, lasti As Long, lastcol As Long
+
+i = 3
+lasti = ws.Range("A" & ws.Rows.Count).End(xlUp).Row
+
+'Working out the known conversion factors
+With ws
+    .Activate
+    .Range("CB3").Formula = "=IFERROR" _
+    & "(VLOOKUP($CA3,rngAPIqualityCFPS,MATCH(CB$2,rngAPIqualityDateCFPS,0),FALSE),"""")"
+    .Range("CB3").AutoFill Destination:=Range(ws.Cells(i, 80), ws.Cells(i, 115)), Type:=xlFillDefault
+    .Range(ws.Cells(i, 80), ws.Cells(lasti, 115)).FillDown
+End With
+
+ws.Calculate
+
+End Sub
+----------------------------------------------------------------------------------------------------------------------------------------
+Sub VolumesAndRatiosSTATISTICS4()
+
+'Calculating the weighted APIs for each crudestream =(Known conversion factors * Ratios)
+Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("Volumes & Ratios")
+'Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("test")
+Dim i As Long, lasti As Long, lastcol As Long
+
+i = 3
+lasti = ws.Range("A" & ws.Rows.Count).End(xlUp).Row
+lastcol = ws.UsedRange.Column - 1 + ws.UsedRange.Columns.Count
+
+With ws
+    .Activate
+    .Range("DO3").Formula = "=IFERROR(CB3*AO3,0)"
+    .Range("DO3").AutoFill Destination:=Range(ws.Cells(i, 119), ws.Cells(i, lastcol)), Type:=xlFillDefault
+    .Range(ws.Cells(i, 119), ws.Cells(lasti, lastcol)).FillDown
+End With
+
+ws.Calculate
+
+End Sub
+----------------------------------------------------------------------------------------------------------------------------------------
+Sub ApplyStatsConversionFactorPerCountry()
+
+'Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("test")
+Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("Conversion Factor Per Country")
+Dim ws2 As Worksheet: Set ws2 = ThisWorkbook.Sheets("CountryList")
+Dim ws3 As Worksheet: Set ws3 = ThisWorkbook.Sheets("Volumes & Ratios")
+Dim i As Long, lasti As Long, col As Long, lastcol As Long, x As Long, lastx As Long
+
+i = 2
+x = 3
+lastx = ws3.Range("DO" & ws3.Rows.Count).End(xlUp).Row
+lasti = ws.Range("A" & ws.Rows.Count).End(xlUp).Row
+'lastcol = ws.Cells(2, ws.Columns.Count).End(xlToLeft).Column
+
+With ws
+    .Activate
+    .Range("A2").EntireRow.Insert
+    .Range("A3").CurrentRegion.Delete
+End With
+
+Range("rngCountryList").Copy
+ws.Range("A2").PasteSpecial xlPasteValues
+Application.CutCopyMode = False
+
+For i = 2 To lasti
+    ws.Range("B" & i).Formula = "=SUMPRODUCT('Volumes & Ratios'!DO$3:DO$" & lastx & "*('Volumes & Ratios'!$DM$3:$DM$" & lastx & "=""" & ws.Range("A" & i).Value & """))"
+    ws.Range("B" & i).Font.Color = vbBlack
+Next i
+
+i = 2
+    
+With ws
+    .Range(ws.Cells(i, 2), ws.Cells(lasti, 2)).AutoFill Destination:=.Range(ws.Cells(i, 2), ws.Cells(lasti, 37)), Type:=xlFillDefault
+End With
+
+ws.Calculate
+
+'Call ModStats.ConversionFactorPerCountrySTATISTICS1
+'Call ModStats.ConversionFactorPerCountrySTATISTICS2
+'Call ModStats.ConversionFactorPerCountrySTATISTICS3
+
+End Sub
+----------------------------------------------------------------------------------------------------------------------------------------
+Sub ApplyStatsBarrelsToTonnes1()
+
+'Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("test")
+Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("Barrels to Tonnes")
+Dim wsCntryID As Worksheet: Set wsCntryID = ThisWorkbook.Sheets("Country IDs")
+Dim wsCFPS As Worksheet: Set wsCFPS = ThisWorkbook.Sheets("Conversion Factor Per Stream")
+Dim wsCFPC As Worksheet: Set wsCFPC = ThisWorkbook.Sheets("Conversion Factor Per Country")
+
+Dim i As Long, lasti As Long, x As Long, lastx As Long, lastCFPS As Long, lastCFPC As Long, lastcol As Long
+
+
+i = 2
+
+lasti = ws.Range("B" & ws.Rows.Count).End(xlUp).Row
+lastx = wsCntryID.Range("A" & wsCntryID.Rows.Count).End(xlUp).Row
+lastcol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
+lastCFPS = wsCFPS.Range("B" & wsCFPS.Rows.Count).End(xlUp).Row
+lastCFPC = wsCFPC.Range("A" & wsCFPC.Rows.Count).End(xlUp).Row
+  
+With ws
+    .Activate
+    .Range("B2").EntireRow.Insert
+    .Range("B3").CurrentRegion.Delete
+End With
+
+Range("rngCrudeStreamNames").Copy
+ws.Range("B2").PasteSpecial xlPasteValues
+Application.CutCopyMode = False
+
+lasti = ws.Range("B" & ws.Rows.Count).End(xlUp).Row
+      
+With ws
+    .Range("D2").Formula = "=B2&C2"
+    .Range("D2").AutoFill Destination:=Range(ws.Cells(i, 4), ws.Cells(lasti, 4)), Type:=xlFillDefault
+    .Calculate
+End With
+
+With ws
+    'Checking country mappings...
+    .Range("A2").Formula = "=IFERROR(VLOOKUP(B2,'Country IDs'!$A$2:$A$" & lastx & ",1,FALSE),""Not Mapped"")"
+    
+    'Filling formulae in rows...
+    .Range("A2").AutoFill Destination:=.Range(ws.Cells(i, 1), ws.Cells(lasti, 1)), Type:=xlFillDefault
+    
+    'Converting from barrels to tonnes...
+    .Range("E2").Formula = "=IFERROR(IF('Volumes & Ratios'!D3=0,""0""," & _
+    "IF(AND(COUNTIF('Conversion Factor Per Stream'!$B$3:$B$" & lastCFPS & "," & _
+    "'Volumes & Ratios'!$B3)>0,'Conversion Factor Per Stream'!C3>0)," & _
+    "'Volumes & Ratios'!D3/VLOOKUP('Volumes & Ratios'!$B3,rngAPIqualityCFPS," & _
+    "MATCH('Volumes & Ratios'!D$2,rngAPIqualityDateCFPS,0),FALSE)*365," & _
+    "('Volumes & Ratios'!D3/(VLOOKUP('Volumes & Ratios'!$A3," & _
+    "'Conversion Factor Per Country'!$A$2:$AK$" & lastCFPC & "," & _
+    "MATCH('Volumes & Ratios'!D$2,rngAPIqualityDateCFPS,0),FALSE))*365))),0)"
+        
+    'Filling formulae across columns of the first row...
+    .Range("E2").AutoFill Destination:=.Range(ws.Cells(i, 5), ws.Cells(i, lastcol)), Type:=xlFillDefault
+    .Calculate
+    
+    'And now across all rows...
+    .Range(ws.Cells(i, 5), ws.Cells(i, lastcol)).AutoFill Destination:=.Range(ws.Cells(i, 5), ws.Cells(lasti, lastcol)), Type:=xlFillDefault
+    .Calculate
+
+End With
+
+End Sub
+----------------------------------------------------------------------------------------------------------------------------------------
+Sub ApplyStatsBarrelsToTonnes2()
+
+Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("Barrels to Tonnes")
+Dim i As Long, lasti As Long
+Dim can As String, chn As String, ivc As String, irn As String, syr As String, uae As String, uk As String
+Dim chn2 As String, ivc2 As String, irn2 As String, syr2 As String, uae2 As String, uk2 As String
+Dim us As String, us2 As String
+
+can = "Canada"
+chn = "People's Republic of China"
+chn2 = "China"
+ivc = "Côte d'Ivoire"
+ivc2 = "Cote"
+irn = "Islamic Republic of Iran"
+irn2 = "Iran"
+syr = "Syrian Arab Republic"
+syr2 = "Syria"
+uae = "UAE"
+uae2 = "United Arab"
+uk = "UK"
+uk2 = "United Kingdom"
+us = "United States"
+us2 = "US"
+
+
+
+i = 2
+lasti = ws.Range("A" & ws.Rows.Count).End(xlUp).Row
+
+'Rechecking country mappings...
+ws.Activate
+
+For i = 2 To lasti
+    
+    Select Case True
+        
+    Case ws.Range("A" & i).Value = "Not Mapped" And _
+    InStr(1, ws.Range("B" & i), can) > 0
+    ws.Range("A" & i).Value = can
+        
+    Case ws.Range("A" & i).Value = "Not Mapped" And _
+    InStr(1, ws.Range("B" & i), chn2) > 0
+    ws.Range("A" & i).Value = chn
+    
+    Case ws.Range("A" & i).Value = "Not Mapped" And _
+    InStr(1, ws.Range("B" & i), ivc2) > 0
+    ws.Range("A" & i).Value = ivc
+    
+    Case ws.Range("A" & i).Value = "Not Mapped" And _
+    InStr(1, ws.Range("B" & i), irn2) > 0
+    ws.Range("A" & i).Value = irn
+    
+    Case ws.Range("A" & i).Value = "Not Mapped" And _
+    InStr(1, ws.Range("B" & i), syr2) > 0
+    ws.Range("A" & i).Value = syr
+    
+    Case ws.Range("A" & i).Value = "Not Mapped" And _
+    InStr(1, ws.Range("B" & i), uae2) > 0
+    ws.Range("A" & i).Value = uae
+    
+    Case ws.Range("A" & i).Value = "Not Mapped" And _
+    InStr(1, ws.Range("B" & i), uk2) > 0
+    ws.Range("A" & i).Value = uk
+    
+    Case ws.Range("A" & i).Value = "Not Mapped" And _
+    InStr(1, ws.Range("B" & i), us2) > 0
+    ws.Range("A" & i).Value = us
+    
+    End Select
+    
+Next i
+
+End Sub
+----------------------------------------------------------------------------------------------------------------------------------------
+Sub ApplyStatsTonnesToToe()
+
+Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("Tonnes to Toe")
+'Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("test")
+Dim wsIEA As Worksheet: Set wsIEA = ThisWorkbook.Sheets("IEA TPT")
+
+Dim i As Long, lasti As Long, lastx As Long, lastcol As Long
+
+i = 2
+
+With ws
+    .Activate
+    .Range("A2").EntireRow.Insert
+    .Range("A3").CurrentRegion.Delete
+End With
+
+Range("rngCrudeStreamNames").Copy
+ws.Range("A2").PasteSpecial xlPasteValues
+Application.CutCopyMode = False
+
+lasti = ws.Range("A" & ws.Rows.Count).End(xlUp).Row
+lastx = wsIEA.Range("A" & wsIEA.Rows.Count).End(xlUp).Row
+lastcol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
+
+'Converting from tonnes to toe
+With ws
+    .Range("C2").Formula = "=IFERROR((IF(COUNTIF('IEA TPT'!$A$2:$A$" & lastx & ",'Barrels to Tonnes'!$A2)=0," & _
+    "VLOOKUP('Barrels to Tonnes'!$D2,rngCrudestreamValsConc2," & _
+    "MATCH('Barrels to Tonnes'!E$1,rngCrudestreamDatesVaR,0),FALSE)*1," & _
+    "VLOOKUP('Barrels to Tonnes'!$A2,rngIEAData,MATCH('Barrels to Tonnes'!E$1," & _
+    "rngIEAdates,0),FALSE)*'Barrels to Tonnes'!E2)),0)"
+    
+    'Dragging formulae across columns of the first row...
+    .Range("C2").AutoFill Destination:=.Range(ws.Cells(i, 3), ws.Cells(i, lastcol)), Type:=xlFillDefault
+    .Calculate
+    
+    'And of course, across all rows...
+    .Range(ws.Cells(i, 3), ws.Cells(i, lastcol)).AutoFill Destination:=.Range(ws.Cells(i, 3), ws.Cells(lasti, lastcol)), Type:=xlFillDefault
+    .Calculate
+End With
+
+End Sub
+----------------------------------------------------------------------------------------------------------------------------------------
+Option Explicit
+Sub ConversionFactorPerStreamSTATISTICS1()
+
+Dim i As Long
+Dim g As Long
+Dim lasti As Long
+Dim ws As Worksheet
+
+Set ws = ThisWorkbook.Sheets("Conversion Factor Per Stream")
+'Set ws = ThisWorkbook.Sheets("test")
+
+i = 3
+lasti = ws.Range("A" & ws.Rows.Count).End(xlUp).Row
+
+ws.Activate
+
+For i = 3 To lasti
+    If InStr(1, Cells(i, 2), "Other NGLs and condensate", 1) Then
+    ws.Range("C" & i & ":AL" & i).Value = 8.35
+    ws.Range("C" & i & ":AL" & i).Font.Color = vbRed
+    End If
+Next i
+'Debug.Print i
+
+End Sub
+----------------------------------------------------------------------------------------------------------------------------------------
+Sub ConversionFactorPerCountrySTATISTICS1()
+
+Dim i As Long, lasti As Long, y As Long, lasty As Long
+Dim ws As Worksheet
+
+Application.EnableCancelKey = xlDisabled
+Application.StatusBar = "Running..."
+
+
+Set ws = ThisWorkbook.Sheets("Conversion Factor Per Country")
+'Set ws = ThisWorkbook.Sheets("test")
+
+i = 2
+y = 37
+
+'Stage 1
+ws.Activate
+
+lasti = ws.Range("A" & ws.Rows.Count).End(xlUp).Row
+lasty = ws.Cells(2, Columns.Count).End(xlToLeft).Column
+
+For i = 2 To lasti
+    For y = lasty To 2 Step -1
+    If ws.Cells(i, y).Value = 0 Then
+        If ws.Cells(i, y).Offset(0, 1).Value <> "" Or ws.Cells(i, y).Offset(0, 1).Value <> 0 Then
+        
+        ws.Cells(i, y).Value = ws.Cells(i, y).Offset(0, 1).Value
+        ws.Cells(i, y).Font.Color = vbRed
+        
+        End If
+    End If
+    Next y
+Next i
+
+ws.Calculate
+Application.StatusBar = ""
+
+End Sub
+----------------------------------------------------------------------------------------------------------------------------------------
+Sub ConversionFactorPerCountrySTATISTICS2()
+
+Dim i As Long, lasti As Long, y As Long, lasty As Long
+Dim ws As Worksheet
+
+Application.EnableCancelKey = xlDisabled
+Application.StatusBar = "Running..."
+
+
+Set ws = ThisWorkbook.Sheets("Conversion Factor Per Country")
+'Set ws = ThisWorkbook.Sheets("test")
+
+i = 2
+y = 37
+lasti = ws.Range("A" & ws.Rows.Count).End(xlUp).Row
+lasty = ws.Cells(2, Columns.Count).End(xlToLeft).Column
+'Stage 2
+
+ws.Activate
+Application.StatusBar = "Running..."
+
+    For i = 2 To lasti
+    For y = 2 To lasty
+            If ws.Cells(i, y).Value = 0 Then
+                If IsNumeric(ws.Cells(i, y).Offset(0, -1)) = True And ws.Cells(i, y) _
+                .Offset(0, -1).Value <> 0 Then
+            
+                ws.Cells(i, y).Value = ws.Cells(i, y).Offset(0, -1).Value
+                ws.Cells(i, y).Font.Color = vbRed
+                
+                End If
+            End If
+    Next y
+    Next i
+
+ws.Calculate
+Application.StatusBar = ""
+
+End Sub
+----------------------------------------------------------------------------------------------------------------------------------------
+Sub ConversionFactorPerCountrySTATISTICS3()
+
+Dim i As Long, lasti As Long, y As Long, lasty As Long
+Dim ws As Worksheet
+
+Application.EnableCancelKey = xlDisabled
+
+Application.StatusBar = "Running..."
+
+Set ws = ThisWorkbook.Sheets("Conversion Factor Per Country")
+'Set ws = ThisWorkbook.Sheets("test")
+
+i = 2
+y = 2
+lasti = ws.Range("A" & ws.Rows.Count).End(xlUp).Row
+lasty = ws.Cells(2, Columns.Count).End(xlToLeft).Column
+
+ws.Activate
+
+For i = 2 To lasti
+    If ws.Cells(i, 2).Value = 0 And ws.Cells(i, 12).Value = 0 And ws.Cells(i, 18).Value = 0 _
+    And ws.Cells(i, 26).Value = 0 And ws.Cells(i, 32).Value = 0 And ws.Cells(i, 37).Value = 0 _
+    Or ws.Cells(i, 2).Value = "" Or ws.Cells(i, 12).Value = "" Or ws.Cells(i, 18).Value = "" _
+    Or ws.Cells(i, 26).Value = "" Or ws.Cells(i, 32).Value = "" Or ws.Cells(i, 37).Value = "" Then
+        
+        ws.Range("B" & i & ":AK" & i).Value = 7.33
+        
+    End If
+Next i
+
+ws.Calculate
+Application.StatusBar = ""
+    
+End Sub
+----------------------------------------------------------------------------------------------------------------------------------------
+Sub ConversionFactorPerStreamSTATISTICS2()
+
+'Welcome to Stage 2 for tab Conversion Factor Per Stream
+
+Dim i As Long, lasti As Long, y As Long, lasty As Long
+Dim ws As Worksheet
+
+Application.EnableCancelKey = xlDisabled
+Application.ScreenUpdating = False
+Application.StatusBar = "Running..."
+
+Set ws = ThisWorkbook.Sheets("Conversion Factor Per Stream")
+'Set ws = ThisWorkbook.Sheets("test")
+
+i = 2
+y = 38
+'lasti = ws.UsedRange.Row - 1 + ws.UsedRange.Rows.Count
+lasti = ws.Range("A" & ws.Rows.Count).End(xlUp).Row
+lasty = ws.UsedRange.Column - 1 + ws.UsedRange.Columns.Count
+
+ws.Activate
+
+    For i = 2 To lasti
+    For y = lasty To 2 Step -1
+            If ws.Cells(i, y).Value = 0 Or ws.Cells(i, y).Value = "" Then
+                If IsNumeric(ws.Cells(i, y).Offset(0, 1)) = True And ws.Cells(i, y) _
+                .Offset(0, 1).Value <> 0 Then
+            
+                ws.Cells(i, y).Value = ws.Cells(i, y).Offset(0, 1).Value
+                ws.Cells(i, y).Font.Color = vbRed
+                
+                End If
+            End If
+    Next y
+    Next i
+
+Application.ScreenUpdating = True
+Application.StatusBar = ""
+
+End Sub
+----------------------------------------------------------------------------------------------------------------------------------------
+Sub ConversionFactorPerStreamSTATISTICS3()
+
+'Then we call on stage 3...
+Dim i As Long, lasti As Long, y As Long, lasty As Long
+Dim ws As Worksheet
+
+Application.EnableCancelKey = xlDisabled
+Application.ScreenUpdating = False
+Application.StatusBar = "Working..."
+
+Set ws = ThisWorkbook.Sheets("Conversion Factor Per Stream")
+'Set ws = ThisWorkbook.Sheets("test")
+i = 2
+y = 3
+
+lasti = ws.Range("A" & ws.Rows.Count).End(xlUp).Row
+lasty = ws.UsedRange.Column - 1 + ws.UsedRange.Columns.Count
+
+ws.Activate
+
+    For i = 2 To lasti
+    For y = 3 To lasty
+        If ws.Cells(i, y).Value = "" And IsNumeric(ws.Cells(i, y).Offset(0, -1)) = True Then
+            
+            ws.Cells(i, y).Value = ws.Cells(i, y).Offset(0, -1)
+            ws.Cells(i, y).Font.Color = vbRed
+        
+        End If
+    Next y
+    Next i
+
+Application.ScreenUpdating = True
+Application.StatusBar = ""
+
+End Sub
+----------------------------------------------------------------------------------------------------------------------------------------
+Sub ConversionFactorPerStreamSTATISTICS4()
+
+'And now call on Stage 4 where we do a VLookup and Match to replace
+'APIs for Crude streams with no APIs with those for their respective country.
+'Go do my bidding...
+
+'=============
+'I COMMAND YOU
+'=============
+Application.EnableCancelKey = xlDisabled
+Application.ScreenUpdating = False
+
+'Declaring variables and stuff...
+
+Dim ws1 As Worksheet: Set ws1 = ThisWorkbook.Sheets("Conversion Factor Per Stream")
+'Dim ws1 As Worksheet: Set ws1 = ThisWorkbook.Sheets("test")
+Dim ws2 As Worksheet: Set ws2 = ThisWorkbook.Sheets("Conversion Factor Per Country")
+Dim ws3 As Worksheet: Set ws3 = ThisWorkbook.Sheets("Volumes & Ratios")
+Dim i As Long, j As Long, x As Long, lasti As Long, lastj As Long
+Dim wsFunc As WorksheetFunction: Set wsFunc = Application.WorksheetFunction
+Dim strSearch As String, vlkup As String, mtch As Long, rngSearch As Long, searchRng As Range
+
+'Assigning those variables to objects:
+
+i = 3
+j = 3
+x = 1
+
+'lasti = ws1.UsedRange.Row - 1 + ws1.UsedRange.Rows.Count
+lasti = ws1.Range("A" & ws1.Rows.Count).End(xlUp).Row
+lastj = ws1.UsedRange.Column - 1 + ws1.UsedRange.Columns.Count
+
+'Creating and executing the loop..
+'GO LOOP >>> BECAUSE I TELL YOU TO >>>
+
+ws1.Activate
+
+For i = 3 To lasti
+    For j = 3 To lastj
+        'Specifying first condition...
+        If ws1.Cells(i, j).Value = "" Or ws1.Cells(i, j).Offset(0, 35).Value = "" Then
+
+NextCol:
+        'Setting ranges and stuff...
+        
+        strSearch = ws1.Range("A" & i).Value
+        rngSearch = ws1.Cells((2), (j))
+        
+        Set searchRng = ws2.Range("A" & x).EntireRow
+        
+        'Specifying second conditions for columns...
+        Select Case True
+            Case j > 38
+            'If True then we've just done year 2035 so go to the next row okay...
+            GoTo NextRow
+            
+        End Select
+        
+        'Creating the formulae from which we'll get our values...
+        mtch = wsFunc.Match(rngSearch, searchRng, 0)
+        vlkup = wsFunc.VLookup(strSearch, ws2.Range("A" & x).CurrentRegion, mtch, False)
+        
+        'Following next is an important condition to prevent Match function from Matching nothingness...
+        
+        Select Case True
+            
+            Case mtch > 38
+            
+            'Okay so we're at the final column (Year 2035).
+            'Now to reset this back to the year 2000
+            
+            j = 3
+            
+            'And then we...
+            
+            GoTo NextRow
+            
+            'Or perhaps we're still not at the last column in which case we do absolutely nothing(Boring, you say?)
+            
+            Case mtch < 38
+            GoTo Assign
+        
+        End Select
+        
+        End If
+        
+        'So assuming we didn't find a blank row above, we'll still need to go to the next row
+        'You know, just to check if it's blank and everything..
+        
+        GoTo NextRow
+        
+Assign:
+'I call this section 'Assign' because well, the values get assigned to the results of the Lookup functions above
+        
+        ws1.Cells(i, j).Value = vlkup
+        'I think i'll colour them blue to highlight crude streams with no API values
+        ws1.Cells(i, j).Font.Color = vbBlue
+        
+        'Now we need to move to the next colum the old fashioned way by:
+        j = j + 1
+        GoTo NextCol '(Take us there magic NextCol)
+        
+    Next j
+NextRow:
+Next i
+
+With ws3
+    .Calculate
+End With
+
+Application.ScreenUpdating = True
+        
+End Sub
+---------------------------------------------------------------------------------------------------------------------------------------
+Sub PivotProduction1()
+
+'Created on the twenty-second day of the second month of the two thousandth and sixteenth year
+'in the year of our Lord (22/02/2016) by David Edwards
+
+'Purpose: To pivot calculated OST production volumes after applying assumptions
+
+Dim pvtTbl As PivotTable
+
+'Source data:
+Dim wsT As Worksheet: Set wsT = ThisWorkbook.Sheets("Tonnes to Toe")
+
+'Pivot Table destination:
+'Dim wsPvtT As Worksheet: Set wsPvtT = ThisWorkbook.Sheets("pvttest")
+Dim wsPvtT As Worksheet: Set wsPvtT = ThisWorkbook.Sheets("Pivot Country Production (Ktoe)")
+
+Dim rngData As Range
+Dim pvtCache As PivotCache
+Dim wsPvtTbl As Worksheet
+Dim pvtFld As PivotField
+
+Set rngData = wsT.Range("rngDataStart").CurrentRegion
+
+wsPvtT.Activate
+
+'Delete existing pivot table
+For Each pvtTbl In wsPvtT.PivotTables
+    If pvtTbl.Name = "Production_Pivot" Then
+        pvtTbl.TableRange2.Clear
+    End If
+Next pvtTbl
+
+'Creating the pivot cache
+ThisWorkbook.PivotCaches _
+.Create(xlDatabase, "'" & rngData.Parent.Name & "'!" & rngData.Address(ReferenceStyle:=xlR1C1), _
+xlPivotTableVersion14).CreatePivotTable wsPvtT.Range("rngPvtStart"), _
+"Production_Pivot", xlPivotTableVersion14
+
+Set pvtTbl = wsPvtT.PivotTables("Production_Pivot")
+pvtTbl.ManualUpdate = True
+
+'Creating fields:
+Set pvtFld = pvtTbl.PivotFields("COUNTRY")
+pvtFld.Orientation = xlRowField
+pvtFld.Position = 1
+
+With pvtTbl.PivotFields("2000")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 1
+End With
+
+With pvtTbl.PivotFields("2001")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 2
+End With
+
+With pvtTbl.PivotFields("2002")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 3
+End With
+
+With pvtTbl.PivotFields("2003")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 4
+End With
+
+With pvtTbl.PivotFields("2004")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 5
+End With
+
+With pvtTbl.PivotFields("2005")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 6
+End With
+
+With pvtTbl.PivotFields("2006")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 7
+End With
+
+With pvtTbl.PivotFields("2007")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 8
+End With
+
+With pvtTbl.PivotFields("2008")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 9
+End With
+
+With pvtTbl.PivotFields("2009")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 10
+End With
+
+With pvtTbl.PivotFields("2010")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 11
+End With
+
+With pvtTbl.PivotFields("2011")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 12
+End With
+
+With pvtTbl.PivotFields("2012")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 13
+End With
+
+With pvtTbl.PivotFields("2013")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 14
+End With
+
+With pvtTbl.PivotFields("2014")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 15
+End With
+
+With pvtTbl.PivotFields("2015")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 16
+End With
+
+With pvtTbl.PivotFields("2016")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 17
+End With
+
+With pvtTbl.PivotFields("2017")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 18
+End With
+
+With pvtTbl.PivotFields("2018")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 19
+End With
+
+With pvtTbl.PivotFields("2019")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 20
+End With
+
+With pvtTbl.PivotFields("2020")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 21
+End With
+
+With pvtTbl.PivotFields("2021")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 22
+End With
+
+With pvtTbl.PivotFields("2022")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 23
+End With
+
+With pvtTbl.PivotFields("2023")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 24
+End With
+
+With pvtTbl.PivotFields("2024")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 25
+End With
+
+With pvtTbl.PivotFields("2025")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 26
+End With
+
+With pvtTbl.PivotFields("2026")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 27
+End With
+
+With pvtTbl.PivotFields("2027")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 28
+End With
+
+With pvtTbl.PivotFields("2028")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 29
+End With
+
+With pvtTbl.PivotFields("2029")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 30
+End With
+
+With pvtTbl.PivotFields("2030")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 31
+End With
+
+With pvtTbl.PivotFields("2031")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 32
+End With
+
+With pvtTbl.PivotFields("2032")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 33
+End With
+
+With pvtTbl.PivotFields("2033")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 34
+End With
+
+With pvtTbl.PivotFields("2034")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 35
+End With
+
+With pvtTbl.PivotFields("2035")
+    .Orientation = xlDataField
+    .Function = xlSum
+    .Position = 36
+End With
+
+With pvtTbl
+    .Update
+End With
+
+End Sub
+---------------------------------------------------------------------------------------------------------------------------------------
+Sub PivotProduction2()
+'Used to copy across crude stream production volumes
+
+Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("Pivot Country Production (Ktoe)")
+'Dim ws2 As Worksheet: Set ws2 = ThisWorkbook.Sheets("test")
+Dim ws2 As Worksheet: Set ws2 = ThisWorkbook.Sheets("EMS Fetch Source Data")
+Dim sFinal As String
+Dim cnt As Integer
+
+Dim i As Long, lasti As Long, col As Long, lastcol As Long
+
+i = 1
+
+'Copying over Production_Pivot (pivot table)...
+With ws2
+    .Activate
+    .Cells.ClearContents
+End With
+
+ws.Range("A1").CurrentRegion.Copy
+ws2.Range("A1").PasteSpecial xlPasteValues
+
+Application.CutCopyMode = False
+
+lasti = ws2.Range("A" & ws2.Rows.Count).End(xlUp).Row
+col = 2
+lastcol = ws2.Cells(1, ws2.Columns.Count).End(xlToLeft).Column
+cnt = 1
+
+'Setting heading names...
+'1:
+ws2.Range("A1").Value = "EMS_Country"
+
+'2:
+'Setting years...
+For col = 2 To lastcol
+    sFinal = Right(ws2.Cells(i, col), 4)
+    'sFinal = Right(s, 5)
+        ws2.Cells(i, col).Value = sFinal
+    Next col
+
+'3: setting unit(kt)...
+With ws2
+    .Range("B1").EntireColumn.Insert
+    .Range("B1").Value = "Unit"
+    .Range("B2").Value = "kt"
+    .Range("B2").AutoFill _
+    Destination:=.Range(ws2.Cells(2, 2), ws2.Cells(lasti, 2)), Type:=xlFillDefault
+End With
+
+End Sub
+---------------------------------------------------------------------------------------------------------------------------------------
+Sub PivotProduction3()
+
+'Used to sum up all Canada and US production
+
+Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("EMS Fetch Source Data")
+
+'Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("test")
+
+Dim i As Long, lasti As Long, col As Long, lastcol As Long
+
+i = 1
+lasti = ws.Range("A" & ws.Rows.Count).End(xlUp).Row
+col = 3
+lastcol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
+
+
+With ws
+    .Activate
+    .Range("B2").Value = "kt"
+    .Range("B2").AutoFill _
+    Destination:=.Range(ws.Cells(2, 2), ws.Cells(lasti, 2)), Type:=xlFillDefault
+End With
+
+For i = 2 To lasti
+    If InStr(1, ws.Range("A" & i), "Grand Total") > 0 Then
+        ws.Range("A" & i).EntireRow.Delete
+        lasti = ws.Range("A" & ws.Rows.Count).End(xlUp).Row
+    End If
+Next i
+
+'Searching for and aggregating American crude streams...
+For i = 2 To lasti
+    If InStr(1, ws.Range("A" & i), "US ") > 0 Then
+        lasti = lasti + 1
+        ws.Cells(lasti, 1).Value = "United States"
+        ws.Cells(lasti, 2).Value = "kt"
+            For col = 3 To lastcol
+                ws.Cells(lasti, col).Value = WorksheetFunction. _
+                SumIf(ws.Columns(1), "*US *", ws.Columns(col))
+            Next col
+        GoTo Canadalabel
+    End If
+Next i
+
+'Searching for and aggregating Canadian crude streams...
+
+Canadalabel:
+
+For i = 2 To lasti
+    If InStr(1, ws.Range("A" & i), "Canada") > 0 Then
+        lasti = lasti + 1
+        ws.Cells(lasti, 1).Value = "Canada"
+        ws.Cells(lasti, 2).Value = "kt"
+            For col = 3 To lastcol
+                ws.Cells(lasti, col).Value = WorksheetFunction. _
+                SumIf(ws.Columns(1), "*Canada *", ws.Columns(col))
+            Next col
+        GoTo exitlabel
+    End If
+Next i
+
+exitlabel:
+
+Exit Sub
+      
+End Sub
+---------------------------------------------------------------------------------------------------------------------------------------
+Sub PivotProduction4()
+
+'To check and map (once again and just to be sure) all EMS countries
+'I use repeated loops. Yes I'm sure there's a cleaner way to do this but for now...
+
+'Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("test")
+Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("EMS Fetch Source Data")
+Dim i As Long, lasti As Long
+
+i = 2
+lasti = ws.Range("A" & ws.Rows.Count).End(xlUp).Row
+
+ws.Activate
+'Remapping Russia...
+For i = 2 To lasti
+    If InStr(1, ws.Range("A" & i), "Russian Federation") > 0 Then
+        ws.Range("A" & i).Value = "Russia"
+        GoTo AmericaCanadaLabel
+    End If
+Next i
+
+AmericaCanadaLabel:
+'Cleaning up the USA and Canada (as we've already summed up their volumes in PivotProduction3)
+For i = 2 To lasti
+    If InStr(1, ws.Range("A" & i), "US ") > 0 Or _
+    InStr(1, ws.Range("A" & i), "Canada (") > 0 Then
+        ws.Range("A" & i).EntireRow.Delete
+        i = Round((0.1 * lasti), 0)
+    End If
+Next i
+
+'Now cleaning up other countries not modelled in EMS...
+For i = 2 To lasti
+    If InStr(1, ws.Range("A" & i), "Congo") > 0 Or _
+        InStr(1, ws.Range("A" & i), "Cote d`Ivoire") > 0 Or _
+        InStr(1, ws.Range("A" & i), "Democratic Republic of Congo") > 0 Or _
+        InStr(1, ws.Range("A" & i), "Malaysia/Thailand") > 0 Or _
+        InStr(1, ws.Range("A" & i), "Nigeria-Sao") > 0 Or _
+        InStr(1, ws.Range("A" & i), "Slovakia") > 0 Or _
+        InStr(1, ws.Range("A" & i), "South Sudan") > 0 Or _
+        InStr(1, ws.Range("A" & i), "Sudan") > 0 Or _
+        InStr(1, ws.Range("A" & i), "Timor") > 0 Then
+            ws.Range("A" & i).EntireRow.Delete
+            i = Round((0.1 * lasti), 0)
+    End If
+Next i
+    
+End Sub
+---------------------------------------------------------------------------------------------------------------------------------------
+Sub PivotTableFinal()
+
+Dim ws1 As Worksheet: Set ws1 = ThisWorkbook.Sheets("EMS Fetch Source Data")
+Dim ws2 As Worksheet: Set ws2 = ThisWorkbook.Sheets("DataPivot")
+Dim ws3 As Worksheet: Set ws3 = ThisWorkbook.Sheets("Fetch Data")
+Dim pvtName As String, dataStartRng As Range, dataRng As Range, newDataRng As Range
+Dim newRng As String
+
+pvtName = "PivotTableFinal"
+
+'Dynamically retrieving range address of data
+Set dataStartRng = ws1.Range("A1")
+'Set dataRng = ws1.Range(dataStartRng, dataStartRng.SpecialCells(xlCellTypeLastCell))
+Set dataRng = ws1.Range("A1").CurrentRegion
+
+newRng = ws1.Name & "!" & dataRng.Address(ReferenceStyle:=xlR1C1)
+
+'Changing pivot table's data source range address
+ws2.PivotTables(pvtName).ChangePivotCache ThisWorkbook.PivotCaches.Create( _
+    SourceType:=xlDatabase, SourceData:=newRng)
+
+'Refreshing pivot table
+ws2.PivotTables(pvtName).RefreshTable
+
+With ws3
+    .Activate
+    .Calculate
+End With
+
+End Sub
+---------------------------------------------------------------------------------------------------------------------------------------
+Sub NameRngOSTFetchData()
+
+'To name the data range for Fetch
+Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("Fetch Data")
+Dim FirstBlankRow As String, i As Long, lasti As Long, lnRow As Long, lnRng As Range
+
+i = 1
+lasti = ws.Range("A" & Rows.Count).End(xlUp).Row
+
+On Error GoTo label
+ThisWorkbook.Names("rngOSTFetchData").Delete
+
+label:
+
+For i = 1 To lasti
+    If ws.Range("A" & i).Value = vbNullString Or _
+    InStr(1, ws.Range("A" & i).Value, "Total") > 0 Then
+                FirstBlankRow = ws.Range("A" & i).Offset(-1, 4).Address
+        GoTo label2
+    End If
+Next i
+
+label2:
+'Debug.Print FirstBlankRow
+
+lnRow = Range(FirstBlankRow).Row
+'Debug.Print lnRow
+
+Set lnRng = ws.Range(ws.Cells(1, 1), ws.Cells(lnRow, 5))
+
+ThisWorkbook.Names.Add Name:="rngOSTFetchData", RefersTo:=lnRng
+
+End Sub
+---------------------------------------------------------------------------------------------------------------------------------------
+
+
