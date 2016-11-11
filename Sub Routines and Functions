@@ -1,0 +1,89 @@
+This text file contains all the sub routines and functions used in the OST Data Transformation Excel file.
+
+1. The CommandModule
+----------------
+This module makes a series of orderly calls to each of the 27 modules used in the process.
+------------------------------------------------------------------------------------------
+Sub CommandModule()
+
+'Author : David Edwards
+'Purpose: This module runs all the code contained in this workbook in their correct sequence.
+'         Doing this manually takes at least 1.5 days but the VBA does it in approximately 70 seconds.
+'Date   : Written on the twenty-fourth day of the second month in the
+'         two-thousandth and sixteenth year of our Lord (or 24/02/2016)
+'==============================================================================================
+'||                              COMMAND MODULE                                              ||
+'==============================================================================================
+
+' STAGE ONE
+'----------
+'Preliminary Steps - Naming initial named ranges(Very very important)
+'--------------------------------------------------------------------
+Call ModUtility.NameCrudeVolumeRange
+Call ModUtility.NameCrudeAPIRange
+Call ModUtility.CopyCrudeStreamRange
+
+'STAGE TWO
+'---------
+'Creating Named ranges for to calculate volumes and ratios of each crudestream
+'------------------------------------------------------------------------------
+Call ModUtility.VolumesAndRatiosSTATISTICS1
+Call ModUtility.NameRangesVolumesAndRatios
+Call ModUtility.VolumesAndRatiosSTATISTICS2
+Call ModUtility.CopyCrudeStreamRange
+
+'STAGE THREE
+'-----------
+'Applying conversion factors for each crude stream and country.
+'This is also where the first of many conditions are evaluated to arrive at the calculation of weighted averages per crude stream.
+'---------------------------------------------------------------------------------------------------------------------------------
+Call ModUtility.ApplyStatsConversionFactorPerStream
+Call ModUtility.VolumesAndRatiosSTATISTICS3
+Call ModUtility.VolumesAndRatiosSTATISTICS4
+Call ModUtility.ApplyStatsConversionFactorPerCountry
+
+'STAGE FOUR
+'----------
+'Applying arguments and assumptions to evaluate each country's conversion factor
+'-------------------------------------------------------------------------------
+Call ModStats.ConversionFactorPerCountrySTATISTICS1
+Call ModStats.ConversionFactorPerCountrySTATISTICS2
+Call ModStats.ConversionFactorPerCountrySTATISTICS3
+
+'STAGE FIVE
+'----------
+' Heavy evaluation and calculation of conversion factors for each crude stream
+'-----------------------------------------------------------------------------
+Call ModStats.ConversionFactorPerStreamSTATISTICS1
+Call ModStats.ConversionFactorPerStreamSTATISTICS2
+Call ModStats.ConversionFactorPerStreamSTATISTICS3
+Call ModStats.ConversionFactorPerStreamSTATISTICS4
+
+'STAGE SIX
+'---------
+'Intensive calculations to arrive at Tonne-of-oil-equivalent values from barrels and tonnes
+'------------------------------------------------------------------------------------------
+Call ModUtility.ApplyStatsBarrelsToTonnes1
+Call ModUtility.ApplyStatsBarrelsToTonnes2
+Call ModUtility.ApplyStatsTonnesToToe
+
+'STAGE SEVEN
+'-----------
+'Pivoting crude streams and production and cleaning up data (The cleaning up data part is very important)
+'--------------------------------------------------------------------------------------------------------
+Call modPivot.PivotProduction1
+Call modPivot.PivotProduction2
+Call modPivot.PivotProduction3
+Call modPivot.PivotProduction4
+Call modPivot.PivotTableFinal
+
+'STAGE EIGHT
+'-----------
+'Finalizing data for Fetch and we're done here
+'---------------------------------------------
+Call modPivot.NameRngOSTFetchData
+
+'MsgBox "Done"
+
+End Sub
+
